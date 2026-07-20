@@ -156,6 +156,17 @@ export function DateNightPage() {
     },
   });
 
+  const deleteIdea = useMutation({
+    mutationFn: async (id: string) => {
+      const supabase = createClient();
+      const { error } = await supabase.from("date_night_ideas").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["date-night-ideas"] });
+    },
+  });
+
   const budgetCap = goal?.monthly_budget_cap ?? 0;
   const budgetUsedPct = budgetCap > 0 ? Math.min(100, (spent / budgetCap) * 100) : 0;
 
@@ -208,10 +219,21 @@ export function DateNightPage() {
           <div className="grid gap-3 md:grid-cols-2">
             {ideas.map((idea) => (
               <Card key={idea.id}>
-                <p className="font-medium text-white">{idea.title}</p>
-                <p className="text-sm text-zinc-500">
-                  {idea.status} · Est. {formatCurrency(idea.estimated_cost)}
-                </p>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-medium text-white">{idea.title}</p>
+                    <p className="text-sm text-zinc-500">
+                      {idea.status} · Est. {formatCurrency(idea.estimated_cost)}
+                    </p>
+                  </div>
+                  <Button
+                    variant="danger"
+                    className="text-xs"
+                    onClick={() => deleteIdea.mutate(idea.id)}
+                  >
+                    Delete
+                  </Button>
+                </div>
               </Card>
             ))}
           </div>

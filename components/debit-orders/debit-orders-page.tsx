@@ -73,6 +73,7 @@ function UpcomingWidget({ days }: { days: number }) {
 export function DebitOrdersPage() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<DebitOrder | null>(null);
 
   const { data: accounts = [] } = useQuery({
     queryKey: ["accounts"],
@@ -108,7 +109,7 @@ export function DebitOrdersPage() {
   const form = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
-      frequency: "monthly",
+      frequency: "monthly" as const,
       next_due_date: new Date().toISOString().split("T")[0],
       active: true,
     },
@@ -124,8 +125,7 @@ export function DebitOrdersPage() {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { error } = await supabase.from("debit_orders").insert({
-        user_id: user.id,
+      const payload = {
         name: values.name,
         account_id: values.account_id,
         category_id: values.category_id || null,
@@ -135,14 +135,32 @@ export function DebitOrdersPage() {
           values.frequency === "custom" ? values.custom_interval_days ?? null : null,
         next_due_date: values.next_due_date,
         active: values.active,
-      });
-      if (error) throw error;
+      };
+
+      if (editing) {
+        const { error } = await supabase
+          .from("debit_orders")
+          .update(payload)
+          .eq("id", editing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("debit_orders").insert({
+          user_id: user.id,
+          ...payload,
+        });
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["debit-orders"] });
       queryClient.invalidateQueries({ queryKey: ["debit-orders-upcoming"] });
       setOpen(false);
-      form.reset();
+      setEditing(null);
+      form.reset({
+        frequency: "monthly",
+        next_due_date: new Date().toISOString().split("T")[0],
+        active: true,
+      });
     },
   });
 
@@ -158,12 +176,49 @@ export function DebitOrdersPage() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const supabase = createClient();
+      const { error } = await supabase.from("debit_orders").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["debit-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["debit-orders-upcoming"] });
+    },
+  });
+
+  function openCreate() {
+    setEditing(null);
+    form.reset({
+      frequency: "monthly",
+      next_due_date: new Date().toISOString().split("T")[0],
+      active: true,
+    });
+    setOpen(true);
+  }
+
+  function openEdit(order: DebitOrder) {
+    setEditing(order);
+    form.reset({
+      name: order.name,
+      account_id: order.account_id,
+      category_id: order.category_id ?? undefined,
+      amount: order.amount,
+      frequency: order.frequency,
+      custom_interval_days: order.custom_interval_days ?? undefined,
+      next_due_date: order.next_due_date,
+      active: order.active,
+    });
+    setOpen(true);
+  }
+
   return (
     <div className="space-y-8">
       <PageHeader
         title="Debit Orders"
         description="Recurring rent, subscriptions, and loans."
-        action={<Button onClick={() => setOpen(true)}>Add debit order</Button>}
+        action={<Button onClick={openCreate}>Add debit order</Button>}
       />
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -188,9 +243,23 @@ export function DebitOrdersPage() {
                 <Button
                   variant="secondary"
                   className="text-xs"
+                  onClick={() => openEdit(d)}
+                >
+                  Edit
+                </Button>
+                <Button
+                  variant="secondary"
+                  className="text-xs"
                   onClick={() => toggleActive.mutate({ id: d.id, active: !d.active })}
                 >
                   {d.active ? "Pause" : "Resume"}
+                </Button>
+                <Button
+                  variant="danger"
+                  className="text-xs"
+                  onClick={() => deleteMutation.mutate(d.id)}
+                >
+                  Delete
                 </Button>
               </div>
             </Card>
@@ -198,7 +267,14 @@ export function DebitOrdersPage() {
         </div>
       )}
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Add debit order">
+      <Modal
+        open={open}
+        onClose={() => {
+          setOpen(false);
+          setEditing(null);
+        }}
+        title={editing ? "Edit debit order" : "Add debit order"}
+      >
         <form onSubmit={form.handleSubmit((v) => save.mutate(v))} className="space-y-4">
           <div>
             <Label>Name</Label>
@@ -248,7 +324,9 @@ export function DebitOrdersPage() {
             <Label>Next due date</Label>
             <Input type="date" {...form.register("next_due_date")} />
           </div>
-          <Button type="submit">Save</Button>
+          <Button type="submit" disabled={save.isPending}>
+            Save
+          </Button>
         </form>
       </Modal>
     </div>

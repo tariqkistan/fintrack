@@ -87,3 +87,55 @@ export async function deleteTransactionWithBalance(
 
   if (error) throw error;
 }
+
+export async function updateTransactionWithBalance(
+  supabase: Client,
+  existing: {
+    id: string;
+    account_id: string;
+    amount: number;
+    type: TransactionType;
+  },
+  updates: {
+    account_id: string;
+    category_id?: string | null;
+    amount: number;
+    type: TransactionType;
+    note?: string | null;
+    occurred_at?: string;
+  }
+) {
+  await adjustAccountBalance(
+    supabase,
+    existing.account_id,
+    existing.amount,
+    existing.type,
+    "reverse"
+  );
+
+  const { data, error } = await supabase
+    .from("transactions")
+    .update({
+      account_id: updates.account_id,
+      category_id: updates.category_id ?? null,
+      amount: updates.amount,
+      type: updates.type,
+      note: updates.note ?? null,
+      occurred_at: updates.occurred_at,
+    })
+    .eq("id", existing.id)
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  await adjustAccountBalance(
+    supabase,
+    updates.account_id,
+    updates.amount,
+    updates.type,
+    "apply"
+  );
+
+  return data;
+}

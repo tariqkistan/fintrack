@@ -5,11 +5,11 @@ Personal financial tracker built with Next.js 14+ (App Router), Supabase, and Ta
 ## Features
 
 - **Auth** — Email/password and magic link via Supabase Auth
-- **Accounts** — Checking, savings, credit card, cash with balances
-- **Transactions** — Manual entry, categories, monthly filters
-- **Debit orders** — Recurring payments with upcoming widgets; auto-processed via Edge Function cron
-- **Savings goals** — Progress tracking, contributions, projected completion
-- **Date night goals** — Themed savings + monthly budget + idea planner
+- **Accounts** — Checking, savings, credit card, cash with balances (create, edit, delete)
+- **Transactions** — Manual entry/edit, categories (including delete), monthly filters
+- **Debit orders** — Recurring payments with create/edit/delete, pause/resume, upcoming widgets; auto-processed via Edge Function cron
+- **Savings goals** — Progress tracking, contributions, projected completion, delete
+- **Date night goals** — Themed savings + monthly budget + idea planner (including delete ideas)
 - **Dashboard** — Net worth, spending charts, upcoming debits, goals overview
 - **MCP server** — AI-queryable tools for transactions, goals, debit orders
 - **`/api/insights`** — Placeholder for future AI-generated insights
