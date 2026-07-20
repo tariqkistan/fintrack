@@ -3,7 +3,11 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
-import { createTransactionWithBalance, deleteTransactionWithBalance } from "@/lib/finance";
+import {
+  createTransactionWithBalance,
+  deleteTransactionWithBalance,
+  updateTransactionWithBalance,
+} from "@/lib/finance";
 import type { Account, Category, Transaction, TransactionType } from "@/lib/types/database";
 import { formatCurrency, formatDate, getMonthRange, formatMonthYear } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
@@ -35,10 +39,17 @@ const categorySchema = z.object({
   color: z.string().min(4),
 });
 
+function toDatetimeLocal(iso: string) {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export function TransactionsPage() {
   const queryClient = useQueryClient();
   const [month, setMonth] = useState(new Date());
   const [txOpen, setTxOpen] = useState(false);
+  const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [catOpen, setCatOpen] = useState(false);
   const [typeFilter, setTypeFilter] = useState<"all" | TransactionType>("all");
 
@@ -87,7 +98,7 @@ export function TransactionsPage() {
   const txForm = useForm({
     resolver: zodResolver(txSchema),
     defaultValues: {
-      type: "expense",
+      type: "expense" as const,
       occurred_at: new Date().toISOString().slice(0, 16),
     },
   });
@@ -100,7 +111,7 @@ export function TransactionsPage() {
   const txType = txForm.watch("type");
   const filteredCategories = categories.filter((c) => c.type === txType);
 
-  const createTx = useMutation({
+  const saveTx = useMutation({
     mutationFn: async (values: TxForm) => {
       const supabase = createClient();
       const {
@@ -108,20 +119,32 @@ export function TransactionsPage() {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      await createTransactionWithBalance(supabase, {
-        user_id: user.id,
-        account_id: values.account_id,
-        category_id: values.category_id || null,
-        amount: values.amount,
-        type: values.type,
-        note: values.note || null,
-        occurred_at: new Date(values.occurred_at).toISOString(),
-      });
+      if (editingTx) {
+        await updateTransactionWithBalance(supabase, editingTx, {
+          account_id: values.account_id,
+          category_id: values.category_id || null,
+          amount: values.amount,
+          type: values.type,
+          note: values.note || null,
+          occurred_at: new Date(values.occurred_at).toISOString(),
+        });
+      } else {
+        await createTransactionWithBalance(supabase, {
+          user_id: user.id,
+          account_id: values.account_id,
+          category_id: values.category_id || null,
+          amount: values.amount,
+          type: values.type,
+          note: values.note || null,
+          occurred_at: new Date(values.occurred_at).toISOString(),
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
       setTxOpen(false);
+      setEditingTx(null);
       txForm.reset({ type: "expense", occurred_at: new Date().toISOString().slice(0, 16) });
     },
   });
@@ -152,10 +175,43 @@ export function TransactionsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
-      setCatOpen(false);
-      catForm.reset();
+      catForm.reset({ name: "", type: "expense", color: "#6366f1" });
     },
   });
+
+  const deleteCategory = useMutation({
+    mutationFn: async (id: string) => {
+      const supabase = createClient();
+      const { error } = await supabase.from("categories").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+    },
+  });
+
+  function openCreateTx() {
+    setEditingTx(null);
+    txForm.reset({
+      type: "expense",
+      occurred_at: new Date().toISOString().slice(0, 16),
+    });
+    setTxOpen(true);
+  }
+
+  function openEditTx(tx: Transaction) {
+    setEditingTx(tx);
+    txForm.reset({
+      account_id: tx.account_id,
+      category_id: tx.category_id ?? undefined,
+      amount: tx.amount,
+      type: tx.type,
+      note: tx.note ?? undefined,
+      occurred_at: toDatetimeLocal(tx.occurred_at),
+    });
+    setTxOpen(true);
+  }
 
   return (
     <div className="space-y-8">
@@ -167,7 +223,7 @@ export function TransactionsPage() {
             <Button variant="secondary" onClick={() => setCatOpen(true)}>
               Categories
             </Button>
-            <Button onClick={() => setTxOpen(true)}>Add transaction</Button>
+            <Button onClick={openCreateTx}>Add transaction</Button>
           </div>
         }
       />
@@ -215,6 +271,9 @@ export function TransactionsPage() {
                   {tx.type === "income" ? "+" : "-"}
                   {formatCurrency(tx.amount)}
                 </span>
+                <Button variant="secondary" className="text-xs" onClick={() => openEditTx(tx)}>
+                  Edit
+                </Button>
                 <Button variant="ghost" className="text-xs" onClick={() => deleteTx.mutate(tx)}>
                   Delete
                 </Button>
@@ -224,8 +283,15 @@ export function TransactionsPage() {
         </div>
       )}
 
-      <Modal open={txOpen} onClose={() => setTxOpen(false)} title="Add transaction">
-        <form onSubmit={txForm.handleSubmit((v) => createTx.mutate(v))} className="space-y-4">
+      <Modal
+        open={txOpen}
+        onClose={() => {
+          setTxOpen(false);
+          setEditingTx(null);
+        }}
+        title={editingTx ? "Edit transaction" : "Add transaction"}
+      >
+        <form onSubmit={txForm.handleSubmit((v) => saveTx.mutate(v))} className="space-y-4">
           <div>
             <Label>Type</Label>
             <Select {...txForm.register("type")}>
@@ -267,7 +333,7 @@ export function TransactionsPage() {
             <Label>Note</Label>
             <Textarea {...txForm.register("note")} />
           </div>
-          <Button type="submit" disabled={createTx.isPending}>
+          <Button type="submit" disabled={saveTx.isPending}>
             Save
           </Button>
         </form>
@@ -299,9 +365,18 @@ export function TransactionsPage() {
         </form>
         <div className="space-y-2">
           {categories.map((c) => (
-            <div key={c.id} className="flex items-center gap-2 text-sm">
-              <span className="h-3 w-3 rounded-full" style={{ background: c.color }} />
-              {c.name} <span className="text-zinc-400">({c.type})</span>
+            <div key={c.id} className="flex items-center justify-between gap-2 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="h-3 w-3 rounded-full" style={{ background: c.color }} />
+                {c.name} <span className="text-zinc-400">({c.type})</span>
+              </div>
+              <Button
+                variant="danger"
+                className="text-xs"
+                onClick={() => deleteCategory.mutate(c.id)}
+              >
+                Delete
+              </Button>
             </div>
           ))}
         </div>

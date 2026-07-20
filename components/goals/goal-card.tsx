@@ -80,6 +80,20 @@ export function GoalCard({ goal }: { goal: SavingsGoal }) {
     },
   });
 
+  const deleteGoal = useMutation({
+    mutationFn: async () => {
+      const supabase = createClient();
+      const { error } = await supabase.from("savings_goals").delete().eq("id", goal.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["savings-goals"] });
+      queryClient.invalidateQueries({ queryKey: ["date-night-goal"] });
+      queryClient.invalidateQueries({ queryKey: ["date-night-ideas"] });
+      queryClient.invalidateQueries({ queryKey: ["goal-contributions", goal.id] });
+    },
+  });
+
   return (
     <Card>
       <div className="flex items-start justify-between gap-4">
@@ -97,9 +111,18 @@ export function GoalCard({ goal }: { goal: SavingsGoal }) {
             </p>
           )}
         </div>
-        <Button variant="secondary" className="text-xs" onClick={() => setContribOpen(true)}>
-          Add contribution
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" className="text-xs" onClick={() => setContribOpen(true)}>
+            Add contribution
+          </Button>
+          <Button
+            variant="danger"
+            className="text-xs"
+            onClick={() => deleteGoal.mutate()}
+          >
+            Delete
+          </Button>
+        </div>
       </div>
       <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
         <div
