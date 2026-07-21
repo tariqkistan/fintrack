@@ -254,15 +254,15 @@ export function TransactionsPage() {
       ) : (
         <div className="space-y-2">
           {filtered.map((tx) => (
-            <Card key={tx.id} className="flex items-center justify-between py-3">
-              <div>
+            <Card key={tx.id} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
                 <p className="font-medium text-white">{tx.category?.name ?? "Uncategorized"}</p>
-                <p className="text-xs text-zinc-500">
+                <p className="truncate text-xs text-zinc-500">
                   {tx.account?.name} · {formatDate(tx.occurred_at)}
                   {tx.note ? ` · ${tx.note}` : ""}
                 </p>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between gap-3 sm:justify-end">
                 <span
                   className={
                     tx.type === "income" ? "font-semibold text-emerald-400" : "font-semibold text-red-400"
@@ -271,12 +271,22 @@ export function TransactionsPage() {
                   {tx.type === "income" ? "+" : "-"}
                   {formatCurrency(tx.amount)}
                 </span>
-                <Button variant="secondary" className="text-xs" onClick={() => openEditTx(tx)}>
-                  Edit
-                </Button>
-                <Button variant="ghost" className="text-xs" onClick={() => deleteTx.mutate(tx)}>
-                  Delete
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="secondary"
+                    className="min-h-10 px-3 text-xs"
+                    onClick={() => openEditTx(tx)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="min-h-10 px-3 text-xs"
+                    onClick={() => deleteTx.mutate(tx)}
+                  >
+                    Delete
+                  </Button>
+                </div>
               </div>
             </Card>
           ))}

@@ -82,7 +82,7 @@ export function SpendingTrendChart({ transactions }: { transactions: Transaction
         </div>
         <p className="text-xs text-zinc-500">Cumulative daily spending</p>
       </div>
-      <div className="h-56">
+      <div className="h-48 sm:h-56">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <defs>

@@ -136,12 +136,16 @@ export function AccountsPage() {
                 </p>
               </div>
               <div className="mt-4 flex gap-2">
-                <Button variant="secondary" className="text-xs" onClick={() => openEdit(account)}>
+                <Button
+                  variant="secondary"
+                  className="min-h-10 flex-1 text-xs sm:flex-none"
+                  onClick={() => openEdit(account)}
+                >
                   Edit
                 </Button>
                 <Button
                   variant="danger"
-                  className="text-xs"
+                  className="min-h-10 flex-1 text-xs sm:flex-none"
                   onClick={() => deleteMutation.mutate(account.id)}
                 >
                   Delete

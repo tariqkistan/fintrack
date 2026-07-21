@@ -47,7 +47,7 @@ export function AdvisorCard({ advice }: { advice: FinancialAdvice }) {
       </div>
 
       <div>
-        <h3 className={cn("text-xl font-semibold tracking-tight", ZONE_HEADLINE[advice.zone])}>
+        <h3 className={cn("text-lg font-semibold tracking-tight sm:text-xl", ZONE_HEADLINE[advice.zone])}>
           {advice.headline}
         </h3>
         <p className="mt-2 text-sm leading-relaxed text-zinc-400">{advice.summary}</p>

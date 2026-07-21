@@ -21,7 +21,7 @@ export function SpendingDonutChart({ data }: { data: CategoryDatum[] }) {
 
   return (
     <div className="mt-2 flex flex-col gap-6 lg:flex-row lg:items-center">
-      <div className="relative mx-auto h-72 w-full max-w-[280px] shrink-0">
+      <div className="relative mx-auto h-56 w-full max-w-[240px] shrink-0 sm:h-72 sm:max-w-[280px]">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <defs>
@@ -38,8 +38,8 @@ export function SpendingDonutChart({ data }: { data: CategoryDatum[] }) {
               nameKey="name"
               cx="50%"
               cy="50%"
-              innerRadius={72}
-              outerRadius={108}
+              innerRadius={56}
+              outerRadius={88}
               paddingAngle={2}
               stroke="rgba(11,11,11,0.8)"
               strokeWidth={2}

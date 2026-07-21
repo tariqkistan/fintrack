@@ -120,7 +120,7 @@ export function DashboardPage() {
   }, [expenses]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5 sm:space-y-8">
       <PageHeader
         title="Dashboard"
         description="Projected leftover after income, debit orders, and discretionary spending."
@@ -128,8 +128,8 @@ export function DashboardPage() {
 
       <AdvisorCard advice={advice} />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Card glow>
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+        <Card glow className="col-span-2 sm:col-span-1">
           <CardTitle>Projected leftover</CardTitle>
           <CardValue
             className={
@@ -152,9 +152,9 @@ export function DashboardPage() {
           <p className="mt-1 text-xs text-zinc-500">Monthly equivalent</p>
         </Card>
         <Card>
-          <CardTitle>Discretionary spending</CardTitle>
+          <CardTitle>Discretionary</CardTitle>
           <CardValue>{formatCurrency(cashflow.discretionaryExpenses)}</CardValue>
-          <p className="mt-1 text-xs text-zinc-500">Excludes posted debit orders</p>
+          <p className="mt-1 hidden text-xs text-zinc-500 sm:block">Excludes posted debit orders</p>
         </Card>
         <Card>
           <CardTitle>Net worth</CardTitle>
@@ -196,11 +196,15 @@ export function DashboardPage() {
           ) : (
             <ul className="mt-3 space-y-2">
               {upcoming.map((d) => (
-                <li key={d.id} className="flex justify-between text-sm text-zinc-300">
-                  <span>
-                    {d.name} · {formatDate(d.next_due_date)}
+                <li
+                  key={d.id}
+                  className="flex items-start justify-between gap-3 text-sm text-zinc-300"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium text-white">{d.name}</span>
+                    <span className="text-xs text-zinc-500">{formatDate(d.next_due_date)}</span>
                   </span>
-                  <span className="font-medium text-white">{formatCurrency(d.amount)}</span>
+                  <span className="shrink-0 font-medium text-white">{formatCurrency(d.amount)}</span>
                 </li>
               ))}
             </ul>
@@ -217,7 +221,7 @@ export function DashboardPage() {
         </div>
       </div>
 
-      <div className="void-cta-gradient rounded-2xl px-8 py-12 text-center">
+      <div className="void-cta-gradient hidden rounded-2xl px-8 py-12 text-center sm:block">
         <h2 className="text-2xl font-bold text-white md:text-3xl">Track at warp speed</h2>
         <p className="mt-2 text-zinc-400">Accounts. Transactions. Goals. Deploy your finances.</p>
       </div>

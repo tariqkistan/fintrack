@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 
 const fieldClass =
-  "w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-zinc-500 outline-none transition focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20";
+  "w-full min-h-11 rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-base text-white placeholder:text-zinc-500 outline-none transition focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 sm:text-sm";
 
 export function Input({
   className,

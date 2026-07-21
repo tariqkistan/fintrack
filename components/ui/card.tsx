@@ -12,7 +12,7 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-xl void-glass p-5",
+        "rounded-xl void-glass p-4 sm:p-5",
         glow && "void-glow-border",
         className
       )}
@@ -44,7 +44,7 @@ export function CardValue({
   children: React.ReactNode;
 }) {
   return (
-    <p className={cn("mt-1 text-2xl font-semibold tracking-tight text-white", className)}>
+    <p className={cn("mt-1 text-xl font-semibold tracking-tight text-white sm:text-2xl", className)}>
       {children}
     </p>
   );

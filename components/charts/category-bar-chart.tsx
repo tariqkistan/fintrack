@@ -32,7 +32,7 @@ export function CategoryBarChart({ data }: { data: CategoryDatum[] }) {
   }));
 
   return (
-    <div className="mt-2 h-80">
+    <div className="mt-2 h-64 sm:h-80">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={chartData}

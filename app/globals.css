@@ -104,6 +104,11 @@ body {
   );
 }
 
+/* Safe area helpers for notched phones */
+.safe-pb {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

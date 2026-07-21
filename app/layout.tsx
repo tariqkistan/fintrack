@@ -18,6 +18,12 @@ export const metadata: Metadata = {
   description: "Track accounts, transactions, debit orders, and savings goals",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover" as const,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
