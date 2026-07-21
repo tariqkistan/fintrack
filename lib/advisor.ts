@@ -7,23 +7,13 @@ export type FinancialZone = "survival" | "breathing" | "comfort";
 
 export type FinancialAdvice = {
   zone: FinancialZone;
-  nextZone: FinancialZone | null;
   bufferRate: number | null;
-  spendRate: number | null;
-  commitmentsTotal: number;
-  /** 0–1+ progress of buffer toward comfort (25%). Clamped display at 1 in UI. */
-  progressToComfort: number;
-  /** 0–1+ progress of buffer toward breathing room (10%). */
-  progressToBreathing: number;
   headline: string;
   summary: string;
-  tips: string[];
   earnMoreForBreathing: number;
   earnMoreForComfort: number;
   requiredIncomeForBreathing: number;
   requiredIncomeForComfort: number;
-  cutForBreathing: number;
-  cutForComfort: number;
 };
 
 function requiredIncomeForRate(commitments: number, rate: number): number {
@@ -41,67 +31,6 @@ function classifyZone(income: number, leftover: number, bufferRate: number | nul
     return "breathing";
   }
   return "comfort";
-}
-
-function nextZoneFor(zone: FinancialZone): FinancialZone | null {
-  if (zone === "survival") return "breathing";
-  if (zone === "breathing") return "comfort";
-  return null;
-}
-
-function buildTips(
-  zone: FinancialZone,
-  cashflow: ProjectedCashflow,
-  earnBreathing: number,
-  earnComfort: number,
-  cutBreathing: number,
-  cutComfort: number
-): string[] {
-  const tips: string[] = [];
-  const { income, debitCommitments, discretionaryExpenses, projectedLeftover } = cashflow;
-
-  if (income <= 0) {
-    tips.push("Log this month’s salary (or other income) under Transactions so advice can score your buffer.");
-    if (debitCommitments > 0) {
-      tips.push("Review active debit orders — they still count as monthly commitments even before income is logged.");
-    }
-    return tips;
-  }
-
-  if (zone === "survival") {
-    if (projectedLeftover < 0) {
-      tips.push(
-        `You’re short about ${Math.round(Math.abs(projectedLeftover))} this month — raise income or cut spend to break even.`
-      );
-    }
-    if (earnBreathing > 0) {
-      tips.push(`Side income or a raise of about ${Math.round(earnBreathing)}/month would unlock breathing room.`);
-    }
-    if (cutBreathing > 0 && discretionaryExpenses > 0) {
-      tips.push(`Cutting about ${Math.round(cutBreathing)} in discretionary spend would also reach breathing room.`);
-    }
-    if (debitCommitments > income * 0.5) {
-      tips.push("Debit orders take a large share of income — pause anything non-essential if you can.");
-    }
-    tips.push("Prioritise essentials first; delay nice-to-haves until leftover turns positive.");
-  } else if (zone === "breathing") {
-    if (earnComfort > 0) {
-      tips.push(`About ${Math.round(earnComfort)} more income per month would put you in comfort (25%+ leftover).`);
-    }
-    if (cutComfort > 0 && discretionaryExpenses > 0) {
-      tips.push(`Or trim roughly ${Math.round(cutComfort)} in discretionary spend to hit comfort without earning more.`);
-    }
-    tips.push("Park leftover into a savings goal so the cushion doesn’t silently disappear.");
-    tips.push("Keep debit orders reviewed monthly — small increases compound into survival mode.");
-  } else {
-    tips.push("You’re in a strong position — automate a transfer of surplus into savings or investments.");
-    tips.push("Protect comfort by avoiding lifestyle creep when income rises.");
-    if (discretionaryExpenses > debitCommitments && debitCommitments > 0) {
-      tips.push("Discretionary spend exceeds debit commitments — that’s fine if intentional; keep an eye on it.");
-    }
-  }
-
-  return tips.slice(0, 4);
 }
 
 function buildCopy(
@@ -172,20 +101,13 @@ function buildCopy(
  */
 export function evaluateFinancialHealth(cashflow: ProjectedCashflow): FinancialAdvice {
   const { income, debitCommitments, discretionaryExpenses, projectedLeftover } = cashflow;
-  const commitmentsTotal = debitCommitments + discretionaryExpenses;
+  const commitments = debitCommitments + discretionaryExpenses;
   const bufferRate = income > 0 ? projectedLeftover / income : null;
-  const spendRate = income > 0 ? commitmentsTotal / income : null;
 
-  const requiredIncomeForBreathing = requiredIncomeForRate(commitmentsTotal, BREATHING_RATE);
-  const requiredIncomeForComfort = requiredIncomeForRate(commitmentsTotal, COMFORT_RATE);
+  const requiredIncomeForBreathing = requiredIncomeForRate(commitments, BREATHING_RATE);
+  const requiredIncomeForComfort = requiredIncomeForRate(commitments, COMFORT_RATE);
   const earnMoreForBreathing = Math.max(0, requiredIncomeForBreathing - Math.max(0, income));
   const earnMoreForComfort = Math.max(0, requiredIncomeForComfort - Math.max(0, income));
-
-  // Cut needed so leftover/income hits target rate: leftover = income - C' => C' = income*(1-t)
-  const maxCommitmentsBreathing = income > 0 ? income * (1 - BREATHING_RATE) : 0;
-  const maxCommitmentsComfort = income > 0 ? income * (1 - COMFORT_RATE) : 0;
-  const cutForBreathing = Math.max(0, commitmentsTotal - maxCommitmentsBreathing);
-  const cutForComfort = Math.max(0, commitmentsTotal - maxCommitmentsComfort);
 
   const zone = classifyZone(income, projectedLeftover, bufferRate);
   const { headline, summary } = buildCopy(
@@ -198,33 +120,14 @@ export function evaluateFinancialHealth(cashflow: ProjectedCashflow): FinancialA
     earnMoreForComfort
   );
 
-  const progressToBreathing =
-    bufferRate === null ? 0 : Math.max(0, bufferRate / BREATHING_RATE);
-  const progressToComfort = bufferRate === null ? 0 : Math.max(0, bufferRate / COMFORT_RATE);
-
   return {
     zone,
-    nextZone: nextZoneFor(zone),
     bufferRate,
-    spendRate,
-    commitmentsTotal,
-    progressToComfort,
-    progressToBreathing,
     headline,
     summary,
-    tips: buildTips(
-      zone,
-      cashflow,
-      earnMoreForBreathing,
-      earnMoreForComfort,
-      cutForBreathing,
-      cutForComfort
-    ),
     earnMoreForBreathing,
     earnMoreForComfort,
     requiredIncomeForBreathing,
     requiredIncomeForComfort,
-    cutForBreathing,
-    cutForComfort,
   };
 }

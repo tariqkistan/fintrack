@@ -41,7 +41,7 @@ async function buildInsightsPayload() {
 
   return {
     data: {
-      version: "1.5.0",
+      version: "1.4.0",
       cashflow: {
         income: cashflow.income,
         debit_commitments: cashflow.debitCommitments,
