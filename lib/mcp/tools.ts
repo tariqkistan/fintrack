@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "../types/database";
+import { computeProjectedCashflow } from "../cashflow";
 import { advanceDueDate } from "../utils";
 
 export function createMcpSupabaseClient(userId?: string) {
@@ -89,6 +90,44 @@ export async function getAccountSummary(
   }, 0);
 
   return { accounts: data, net_worth: netWorth };
+}
+
+export async function getProjectedCashflow(
+  client: ReturnType<typeof createClient<Database>>,
+  userId: string
+) {
+  const start = new Date();
+  start.setDate(1);
+  start.setHours(0, 0, 0, 0);
+
+  const [txResult, debitResult] = await Promise.all([
+    client
+      .from("transactions")
+      .select("amount, type, debit_order_id")
+      .eq("user_id", userId)
+      .gte("occurred_at", start.toISOString()),
+    client
+      .from("debit_orders")
+      .select("amount, frequency, custom_interval_days, active")
+      .eq("user_id", userId)
+      .eq("active", true),
+  ]);
+
+  if (txResult.error) throw txResult.error;
+  if (debitResult.error) throw debitResult.error;
+
+  const cashflow = computeProjectedCashflow({
+    transactions: txResult.data ?? [],
+    debitOrders: debitResult.data ?? [],
+  });
+
+  return {
+    month_start: start.toISOString(),
+    income: cashflow.income,
+    debit_commitments: cashflow.debitCommitments,
+    discretionary_expenses: cashflow.discretionaryExpenses,
+    projected_leftover: cashflow.projectedLeftover,
+  };
 }
 
 export { advanceDueDate };

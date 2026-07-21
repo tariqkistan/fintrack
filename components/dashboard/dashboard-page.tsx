@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import type { Account, DebitOrder, SavingsGoal, Transaction } from "@/lib/types/database";
+import { computeProjectedCashflow } from "@/lib/cashflow";
 import { formatCurrency, formatDate, addDays } from "@/lib/utils";
 import { Card, CardTitle, CardValue } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
@@ -58,6 +59,20 @@ export function DashboardPage() {
   const cutoff7 = addDays(new Date(), 7).toISOString().split("T")[0];
   const today = new Date().toISOString().split("T")[0];
 
+  const { data: activeDebits = [] } = useQuery({
+    queryKey: ["debit-orders-active"],
+    queryFn: async () => {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("debit_orders")
+        .select("*")
+        .eq("active", true)
+        .order("next_due_date");
+      if (error) throw error;
+      return data as DebitOrder[];
+    },
+  });
+
   const { data: upcoming = [] } = useQuery({
     queryKey: ["debit-orders-upcoming", 7],
     queryFn: async () => {
@@ -79,7 +94,14 @@ export function DashboardPage() {
     return a.type === "credit_card" ? sum - balance : sum + balance;
   }, 0);
 
-  const monthlySpending = expenses.reduce((s, t) => s + Number(t.amount), 0);
+  const cashflow = useMemo(
+    () =>
+      computeProjectedCashflow({
+        transactions: monthTransactions,
+        debitOrders: activeDebits,
+      }),
+    [monthTransactions, activeDebits]
+  );
 
   const spendingByCategory = useMemo(() => {
     const map = new Map<string, { name: string; amount: number; color: string }>();
@@ -97,21 +119,44 @@ export function DashboardPage() {
     <div className="space-y-8">
       <PageHeader
         title="Dashboard"
-        description="Your financial overview — net worth, spending, and goals at a glance."
+        description="Projected leftover after income, debit orders, and discretionary spending."
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card glow>
+          <CardTitle>Projected leftover</CardTitle>
+          <CardValue
+            className={
+              cashflow.projectedLeftover < 0 ? "text-red-400" : undefined
+            }
+          >
+            {formatCurrency(cashflow.projectedLeftover)}
+          </CardValue>
+          <p className="mt-1 text-xs text-zinc-500">
+            Income − debits − discretionary
+          </p>
+        </Card>
+        <Card>
+          <CardTitle>Monthly income</CardTitle>
+          <CardValue>{formatCurrency(cashflow.income)}</CardValue>
+        </Card>
+        <Card>
+          <CardTitle>Debit commitments</CardTitle>
+          <CardValue>{formatCurrency(cashflow.debitCommitments)}</CardValue>
+          <p className="mt-1 text-xs text-zinc-500">Monthly equivalent</p>
+        </Card>
+        <Card>
+          <CardTitle>Discretionary spending</CardTitle>
+          <CardValue>{formatCurrency(cashflow.discretionaryExpenses)}</CardValue>
+          <p className="mt-1 text-xs text-zinc-500">Excludes posted debit orders</p>
+        </Card>
+        <Card>
           <CardTitle>Net worth</CardTitle>
           <CardValue>{formatCurrency(netWorth)}</CardValue>
         </Card>
         <Card>
           <CardTitle>Accounts</CardTitle>
           <CardValue>{accounts.length}</CardValue>
-        </Card>
-        <Card>
-          <CardTitle>Monthly spending</CardTitle>
-          <CardValue>{formatCurrency(monthlySpending)}</CardValue>
         </Card>
       </div>
 

@@ -16,6 +16,7 @@ import {
   getGoalProgress,
   getUpcomingDebitOrders,
   getAccountSummary,
+  getProjectedCashflow,
 } from "./tools";
 
 const userId = process.env.MCP_USER_ID;
@@ -28,7 +29,7 @@ const { client } = createMcpSupabaseClient(userId);
 
 const server = new McpServer({
   name: "fintrack",
-  version: "1.0.0",
+  version: "1.3.0",
 });
 
 server.tool(
@@ -79,6 +80,18 @@ server.tool(
   {},
   async () => {
     const data = await getAccountSummary(client, userId);
+    return {
+      content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+    };
+  }
+);
+
+server.tool(
+  "get_projected_cashflow",
+  "Projected leftover for the current month: income minus active debit commitments (monthly-normalized) minus discretionary expenses",
+  {},
+  async () => {
+    const data = await getProjectedCashflow(client, userId);
     return {
       content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
     };
