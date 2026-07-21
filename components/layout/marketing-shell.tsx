@@ -86,11 +86,11 @@ function FinancePreview() {
         <div className="mt-6 grid grid-cols-2 gap-3">
           <div className="rounded-lg border border-white/5 bg-white/5 p-3">
             <p className="text-zinc-500">Net worth</p>
-            <p className="mt-1 text-lg font-semibold text-white">$24,580</p>
+            <p className="mt-1 text-lg font-semibold text-white">R24,580</p>
           </div>
           <div className="rounded-lg border border-white/5 bg-white/5 p-3">
             <p className="text-zinc-500">This month</p>
-            <p className="mt-1 text-lg font-semibold text-violet-300">-$2,140</p>
+            <p className="mt-1 text-lg font-semibold text-violet-300">-R2,140</p>
           </div>
         </div>
       </div>

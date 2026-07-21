@@ -79,6 +79,6 @@ export const CHART_GRID = "rgba(255, 255, 255, 0.06)";
 export const CHART_AXIS = "#71717a";
 
 export function formatCompactCurrency(value: number) {
-  if (value >= 1000) return `$${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}k`;
-  return `$${value}`;
+  if (value >= 1000) return `R${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}k`;
+  return `R${value}`;
 }

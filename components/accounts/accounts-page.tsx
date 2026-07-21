@@ -48,7 +48,7 @@ export function AccountsPage() {
 
   const form = useForm({
     resolver: zodResolver(accountSchema),
-    defaultValues: { name: "", type: "checking" as const, balance: 0, currency: "USD" },
+    defaultValues: { name: "", type: "checking" as const, balance: 0, currency: "ZAR" },
   });
 
   const saveMutation = useMutation({
@@ -95,7 +95,7 @@ export function AccountsPage() {
 
   function openCreate() {
     setEditing(null);
-    form.reset({ name: "", type: "checking", balance: 0, currency: "USD" });
+    form.reset({ name: "", type: "checking", balance: 0, currency: "ZAR" });
     setOpen(true);
   }
 

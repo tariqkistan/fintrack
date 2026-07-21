@@ -13,7 +13,7 @@ CREATE TABLE public.accounts (
   name TEXT NOT NULL,
   type public.account_type NOT NULL DEFAULT 'checking',
   balance NUMERIC(14, 2) NOT NULL DEFAULT 0,
-  currency TEXT NOT NULL DEFAULT 'USD',
+  currency TEXT NOT NULL DEFAULT 'ZAR',
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
