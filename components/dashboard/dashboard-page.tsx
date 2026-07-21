@@ -5,10 +5,12 @@ import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import type { Account, DebitOrder, SavingsGoal, Transaction } from "@/lib/types/database";
 import { computeProjectedCashflow } from "@/lib/cashflow";
+import { evaluateFinancialHealth } from "@/lib/advisor";
 import { formatCurrency, formatDate, addDays } from "@/lib/utils";
 import { Card, CardTitle, CardValue } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
 import { GoalCard } from "@/components/goals/goal-card";
+import { AdvisorCard } from "@/components/dashboard/advisor-card";
 import { SpendingDonutChart } from "@/components/charts/spending-donut-chart";
 import { CategoryBarChart } from "@/components/charts/category-bar-chart";
 import { SpendingTrendChart } from "@/components/charts/spending-trend-chart";
@@ -103,6 +105,8 @@ export function DashboardPage() {
     [monthTransactions, activeDebits]
   );
 
+  const advice = useMemo(() => evaluateFinancialHealth(cashflow), [cashflow]);
+
   const spendingByCategory = useMemo(() => {
     const map = new Map<string, { name: string; amount: number; color: string }>();
     for (const tx of expenses) {
@@ -121,6 +125,8 @@ export function DashboardPage() {
         title="Dashboard"
         description="Projected leftover after income, debit orders, and discretionary spending."
       />
+
+      <AdvisorCard advice={advice} />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card glow>

@@ -17,6 +17,7 @@ import {
   getUpcomingDebitOrders,
   getAccountSummary,
   getProjectedCashflow,
+  getFinancialAdvice,
 } from "./tools";
 
 const userId = process.env.MCP_USER_ID;
@@ -29,7 +30,7 @@ const { client } = createMcpSupabaseClient(userId);
 
 const server = new McpServer({
   name: "fintrack",
-  version: "1.3.0",
+  version: "1.4.0",
 });
 
 server.tool(
@@ -92,6 +93,18 @@ server.tool(
   {},
   async () => {
     const data = await getProjectedCashflow(client, userId);
+    return {
+      content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+    };
+  }
+);
+
+server.tool(
+  "get_financial_advice",
+  "Rule-based financial advisor: Survival / Breathing room / Comfort zones and how much more income is needed to reach the next zone",
+  {},
+  async () => {
+    const data = await getFinancialAdvice(client, userId);
     return {
       content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
     };

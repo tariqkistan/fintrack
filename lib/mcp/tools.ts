@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "../types/database";
 import { computeProjectedCashflow } from "../cashflow";
+import { evaluateFinancialHealth } from "../advisor";
 import { advanceDueDate } from "../utils";
 
 export function createMcpSupabaseClient(userId?: string) {
@@ -127,6 +128,27 @@ export async function getProjectedCashflow(
     debit_commitments: cashflow.debitCommitments,
     discretionary_expenses: cashflow.discretionaryExpenses,
     projected_leftover: cashflow.projectedLeftover,
+  };
+}
+
+export async function getFinancialAdvice(
+  client: ReturnType<typeof createClient<Database>>,
+  userId: string
+) {
+  const projected = await getProjectedCashflow(client, userId);
+  const cashflow = {
+    income: projected.income,
+    debitCommitments: projected.debit_commitments,
+    discretionaryExpenses: projected.discretionary_expenses,
+    projectedLeftover: projected.projected_leftover,
+  };
+  const advice = evaluateFinancialHealth(cashflow);
+
+  return {
+    version: "1.4.0",
+    month_start: projected.month_start,
+    cashflow: projected,
+    advice,
   };
 }
 
