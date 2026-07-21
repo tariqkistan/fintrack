@@ -126,7 +126,7 @@ export function DashboardPage() {
         description="Projected leftover after income, debit orders, and discretionary spending."
       />
 
-      <AdvisorCard advice={advice} />
+      <AdvisorCard advice={advice} cashflow={cashflow} />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card glow>
